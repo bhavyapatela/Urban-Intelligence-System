@@ -34,7 +34,6 @@ def get_current_weather():
             freq=pd.Timedelta(seconds=hourly.Interval()),
             inclusive="left"
         ).tz_convert("Asia/Kolkata"),
-
         "temperature": hourly.Variables(0).ValuesAsNumpy(),
         "humidity": hourly.Variables(1).ValuesAsNumpy(),
     })
@@ -60,12 +59,11 @@ def predict_aqi():
 
     traffic = get_traffic(future_hour, is_weekend)
 
-    # ⚠️ still limitation: no real pollutant data
     features = pd.DataFrame([{
         "temperature": weather["temperature"],
         "humidity": weather["humidity"],
-        "pm10": 100,      # placeholder (mention in viva)
-        "pm2_5": 50,      # placeholder
+        "pm10": 100,      # limitation
+        "pm2_5": 50,
         "traffic_index": traffic,
         "hour": future_hour,
         "day": now.day,
@@ -78,8 +76,3 @@ def predict_aqi():
         "predicted_aqi": round(float(prediction), 2),
         "hour": future_hour
     }
-
-
-if __name__ == "__main__":
-    result = predict_aqi()
-    print(result)
