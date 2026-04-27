@@ -100,6 +100,10 @@ User Query → AI Agent → Data/Model → Insight → Response
 🔗 https://github.com/bhavyapatela/Urban-Intelligence-System  
 ---
 
+## 👨‍👨‍👦 Contributors
+**Anirudh Gupta**, **Aayush Gurung**, **Bhavya Patela**
+
+---
 ## 📧 Contact
 **Bhavya Patela**  
 📩 bhavyaatwork2026@gmail.com  
