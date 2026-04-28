@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routes.assistant import router as assistant_router
+from UrbanAI.routes.assistant import router as assistant_router
 
 app = FastAPI(title="Urban Intelligence AI")
 

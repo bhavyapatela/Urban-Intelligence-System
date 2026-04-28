@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from fastapi import APIRouter
 from models.query_model import UserQuery
 from services.weather_service import get_weather
@@ -53,4 +54,14 @@ def chat_with_ai(request: ChatRequest):
             answer="Sorry, something went wrong.",
             data=ChatResponseData(city=request.city)
         )
-
+
+=======
+from fastapi import APIRouter
+from UrbanAI.services.prediction_services import predict_aqi
+
+router = APIRouter()
+
+@router.get("/predict-aqi")
+def get_prediction():
+    return predict_aqi()
+>>>>>>> 1ecc5dc0d6d5a435aa1d718c8466dc0ea15afcb6
