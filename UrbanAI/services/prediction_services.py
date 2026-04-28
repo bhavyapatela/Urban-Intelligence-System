@@ -1,14 +1,20 @@
 import pandas as pd
 import joblib
 from datetime import datetime
+import requests
 import openmeteo_requests
 import requests_cache
 from retry_requests import retry
 
-# Load model
+# ==============================
+# LOAD MODEL (only once)
+# ==============================
 model = joblib.load("ml_model/model/saved_model/aqi_model.pkl")
 
 
+# ==============================
+# GET LIVE WEATHER DATA
+# ==============================
 def get_current_weather():
     cache_session = requests_cache.CachedSession('.cache', expire_after=3600)
     retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
@@ -38,9 +44,36 @@ def get_current_weather():
         "humidity": hourly.Variables(1).ValuesAsNumpy(),
     })
 
-    return df.iloc[0]
+    current_hour = datetime.now().hour
+    return df[df["time"].dt.hour == current_hour].iloc[0]
 
 
+# ==============================
+# GET LIVE POLLUTION DATA
+# ==============================
+def get_live_pollution():
+    url = "http://api.openweathermap.org/data/2.5/air_pollution"
+
+    params = {
+        "lat": 28.6139,
+        "lon": 77.2090,
+        "appid": "5711ba1f7e117df8f9c2c4f2accc3f7d"
+    }
+
+    response = requests.get(url, params=params)
+    data = response.json()
+
+    comp = data["list"][0]["components"]
+
+    return {
+        "pm2_5": comp["pm2_5"],
+        "pm10": comp["pm10"]
+    }
+
+
+# ==============================
+# TRAFFIC (STILL SIMULATED)
+# ==============================
 def get_traffic(hour, is_weekend):
     if is_weekend:
         return 0.5 if 10 <= hour <= 13 else 0.2
@@ -50,9 +83,14 @@ def get_traffic(hour, is_weekend):
         return 0.3
 
 
+# ==============================
+# MAIN PREDICTION FUNCTION
+# ==============================
 def predict_aqi():
     now = datetime.now()
+
     weather = get_current_weather()
+    pollution = get_live_pollution()
 
     future_hour = (now.hour + 1) % 24
     is_weekend = 1 if now.weekday() >= 5 else 0
@@ -62,8 +100,8 @@ def predict_aqi():
     features = pd.DataFrame([{
         "temperature": weather["temperature"],
         "humidity": weather["humidity"],
-        "pm10": 100,      # limitation
-        "pm2_5": 50,
+        "pm10": pollution["pm10"],
+        "pm2_5": pollution["pm2_5"],
         "traffic_index": traffic,
         "hour": future_hour,
         "day": now.day,
@@ -74,5 +112,10 @@ def predict_aqi():
 
     return {
         "predicted_aqi": round(float(prediction), 2),
-        "hour": future_hour
+        "hour": future_hour,
+        "pm25": pollution["pm2_5"],
+        "pm10": pollution["pm10"],
+        "temperature": float(weather["temperature"]),
+        "humidity": float(weather["humidity"]),
+        "traffic": traffic
     }
