@@ -1,0 +1,13 @@
+1. Congestion levels peak during morning (8–10 AM) and evening (6–8 PM) hours, indicating typical office commute patterns and high road usage during these periods.
+
+2. Traffic congestion remains consistently high during weekdays (days 0–4) and drops significantly on weekends (days 5–6), indicating that work-related travel is a major contributor to urban traffic.
+
+3. Weekdays show significantly higher congestion compared to weekends, suggesting that work-related travel is a major contributor to urban traffic.
+
+4. AQI levels show a steady increase throughout the day, with the highest values observed during evening hours. This suggests that air pollution accumulates over time, likely due to increased human activities and traffic during the day.
+
+5. While some high congestion instances correspond to elevated AQI levels, the overall distribution is scattered, indicating that traffic alone is not the sole determinant of air pollution. Other environmental factors likely play a significant role.
+
+6. Most observations occurred under no-rain conditions, where congestion levels vary significantly due to other factors such as time of day or traffic demand. Due to very limited data during rainfall, no strong relationship between precipitation and congestion can be conclusively established.
+
+7. The majority of observations occur under high visibility conditions, where congestion levels still vary significantly. Due to the lack of sufficient low-visibility data points, no clear relationship between visibility and traffic congestion can be established.
