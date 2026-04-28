@@ -10,7 +10,7 @@ class ChatResponseData(BaseModel):
     weather: Dict[str, Any] = {}
     pollution: Dict[str, Any] = {}
     traffic: Dict[str, Any] = {}
-    predicted_aqi: Optional[int] = None
+    predicted_aqi: Optional[float] = None
 
 class ChatResponse(BaseModel):
     answer: str

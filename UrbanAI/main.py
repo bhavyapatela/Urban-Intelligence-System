@@ -6,4 +6,8 @@ load_dotenv()
 
 app = FastAPI(title="Urban Intelligence AI")
 
+@app.get("/")
+def read_root():
+    return {"message": "Urban Intelligence AI Assistant is running!"}
+
 app.include_router(assistant_router)

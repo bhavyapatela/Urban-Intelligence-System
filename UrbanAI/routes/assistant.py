@@ -1,33 +1,73 @@
-<<<<<<< HEAD
-from fastapi import APIRouter
-from models.query_model import UserQuery
-from services.weather_service import get_weather
-from services.pollution_service import get_pollution
-from services.ai_service import generate_answer
-from services.traffic_service import get_traffic
-from models.chat_model import ChatRequest, ChatResponse, ChatResponseData
+from fastapi import APIRouter, HTTPException
+from UrbanAI.models.query_model import UserQuery
+from UrbanAI.services.weather_service import get_weather
+from UrbanAI.services.traffic_service import get_traffic
+from UrbanAI.services.prediction_services import predict_aqi
+from UrbanAI.services.ai_service import generate_answer
+from UrbanAI.models.chat_model import ChatRequest, ChatResponse, ChatResponseData
 
 
 router = APIRouter()
+
 @router.post("/ask")
 def ask_ai(query: UserQuery):
+    """
+    Main AI assistant endpoint with intent detection and service routing.
+    """
+    try:
+        question = query.question.lower()
 
-    question = query.question.lower()
+        # 1. AQI / Pollution Prediction Intent
+        if any(word in question for word in ["aqi", "pollution", "air", "predict"]):
+            prediction = predict_aqi()
+            return {
+                "type": "prediction",
+                "response": f"The predicted AQI is {prediction['predicted_aqi']}. Details: Temp {prediction['temperature']}°C, Humidity {prediction['humidity']}%."
+            }
 
-    city_data = ""
+        # 2. Weather Intent
+        elif "weather" in question:
+            try:
+                weather_data = get_weather()
+                return {
+                    "type": "weather",
+                    "response": weather_data
+                }
+            except Exception as e:
+                return {
+                    "type": "weather",
+                    "response": "Currently unable to fetch weather data. Please try again later."
+                }
 
-    if "weather" in question:
-        city_data += get_weather()
+        # 3. Traffic Intent
+        elif any(word in question for word in ["traffic", "road", "congestion"]):
+            try:
+                traffic_data = get_traffic()
+                return {
+                    "type": "traffic",
+                    "response": traffic_data
+                }
+            except Exception as e:
+                return {
+                    "type": "traffic",
+                    "response": "Traffic information is currently unavailable."
+                }
 
-    if "pollution" in question or "air" in question:
-        city_data += get_pollution()
+        # 4. General / LLM Intent
+        else:
+            answer = generate_answer(query.question, "")
+            return {
+                "type": "general",
+                "response": answer
+            }
 
-    if "traffic" in question or "road" in question or "congestion" in question:
-        city_data += get_traffic()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Assistant Error: {str(e)}")
 
-    answer = generate_answer(question, city_data)
-
-    return {"response": answer}
+@router.get("/predict-aqi")
+def get_prediction():
+    """Direct endpoint for AQI prediction."""
+    return predict_aqi()
 
 @router.post("/chat", response_model=ChatResponse)
 def chat_with_ai(request: ChatRequest):
@@ -35,33 +75,22 @@ def chat_with_ai(request: ChatRequest):
     Main chatbot endpoint for Urban Intelligence System.
     """
     try:
-        # For now, we use mock data as requested
+        # Mock data for now as requested
         mock_data = ChatResponseData(
             city=request.city,
-            weather={"temp": "25C", "condition": "Sunny"},
+            weather={"temp": "25°C", "condition": "Sunny"},
             pollution={"aqi": 42, "status": "Good"},
             traffic={"level": "Low", "congestion": "Normal"},
-            predicted_aqi=None
+            predicted_aqi=160.04 # Matching the example output the user saw
         )
 
         return ChatResponse(
-            answer="This is a basic chatbot response for " + request.city,
+            answer=f"The current intelligence report for {request.city} indicates stable conditions. {mock_data.weather['temp']} and {mock_data.weather['condition']}.",
             data=mock_data
         )
     except Exception as e:
-        # Simple error handling for beginners
         return ChatResponse(
-            answer="Sorry, something went wrong.",
+            answer="Sorry, I encountered an error processing your request.",
             data=ChatResponseData(city=request.city)
         )
 
-=======
-from fastapi import APIRouter
-from UrbanAI.services.prediction_services import predict_aqi
-
-router = APIRouter()
-
-@router.get("/predict-aqi")
-def get_prediction():
-    return predict_aqi()
->>>>>>> 1ecc5dc0d6d5a435aa1d718c8466dc0ea15afcb6
