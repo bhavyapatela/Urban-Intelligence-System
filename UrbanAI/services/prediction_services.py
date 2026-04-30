@@ -1,8 +1,8 @@
 import os
 import pandas as pd
 from dotenv import load_dotenv
-
 load_dotenv()
+
 import joblib
 from datetime import datetime
 import requests
@@ -17,7 +17,7 @@ model = joblib.load("ml_model/model/saved_model/aqi_model.pkl")
 
 
 # ==============================
-# AQI CATEGORY (IMPORTANT)
+# AQI CATEGORY
 # ==============================
 def categorize_aqi(aqi):
     if aqi <= 50:
@@ -33,7 +33,7 @@ def categorize_aqi(aqi):
 
 
 # ==============================
-# GET LIVE WEATHER
+# WEATHER
 # ==============================
 def get_current_weather():
     try:
@@ -68,31 +68,24 @@ def get_current_weather():
         return df[df["time"].dt.hour == current_hour].iloc[0]
 
     except Exception:
-        return {"temperature": 30, "humidity": 50}  # fallback
+        return {"temperature": 30, "humidity": 50}
 
 
 # ==============================
-# GET LIVE POLLUTION
+# POLLUTION
 # ==============================
 def get_live_pollution():
     try:
         url = "http://api.openweathermap.org/data/2.5/air_pollution"
+
         params = {
             "lat": 28.6139,
             "lon": 77.2090,
-            "appid": "5711ba1f7e117df8f9c2c4f2accc3f7d"
+            "appid": os.getenv("OPENWEATHER_API_KEY")
         }
 
-<<<<<<< HEAD
-    params = {
-        "lat": 28.6139,
-        "lon": 77.2090,
-        "appid": os.getenv("OPENWEATHER_API_KEY")
-    }
-=======
         response = requests.get(url, params=params, timeout=5)
         data = response.json()
->>>>>>> dc43980 (Update)
 
         comp = data["list"][0]["components"]
 
@@ -102,7 +95,7 @@ def get_live_pollution():
         }
 
     except Exception:
-        return {"pm2_5": 50, "pm10": 100}  # fallback
+        return {"pm2_5": 50, "pm10": 100}
 
 
 # ==============================
@@ -114,19 +107,17 @@ def predict_aqi():
     weather = get_current_weather()
     pollution = get_live_pollution()
 
-    # ✅ MATCH TRAINING FEATURES EXACTLY
     features = pd.DataFrame([{
         "temperature": weather["temperature"],
         "humidity": weather["humidity"],
         "pm10": pollution["pm10"],
         "pm2_5": pollution["pm2_5"],
-        "traffic_index": 0.3,   # keep simple
+        "traffic_index": 0.3,
         "hour": now.hour,
         "day": now.day,
         "month": now.month
     }])
 
-    # ✅ FORCE CORRECT ORDER (VERY IMPORTANT)
     expected_cols = [
         "temperature","humidity","pm10","pm2_5",
         "traffic_index","hour","day","month"
