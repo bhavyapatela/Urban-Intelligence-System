@@ -7,8 +7,6 @@ import joblib
 from datetime import datetime
 import requests
 import openmeteo_requests
-import requests_cache
-from retry_requests import retry
 
 # ==============================
 # LOAD MODEL
@@ -33,13 +31,11 @@ def categorize_aqi(aqi):
 
 
 # ==============================
-# WEATHER
+# GET LIVE WEATHER (NO CACHE)
 # ==============================
 def get_current_weather():
     try:
-        cache_session = requests_cache.CachedSession('.cache', expire_after=3600)
-        retry_session = retry(cache_session, retries=3, backoff_factor=0.2)
-        openmeteo = openmeteo_requests.Client(session=retry_session)
+        openmeteo = openmeteo_requests.Client()
 
         url = "https://api.open-meteo.com/v1/forecast"
         params = {
@@ -72,7 +68,7 @@ def get_current_weather():
 
 
 # ==============================
-# POLLUTION
+# GET LIVE POLLUTION
 # ==============================
 def get_live_pollution():
     try:
