@@ -51,9 +51,9 @@ async def ask_ai(query: UserQuery):
         raise HTTPException(status_code=500, detail=f"Assistant Error: {str(e)}")
 
 @router.get("/predict-aqi")
-def get_prediction():
+def get_prediction(lat: float = 28.6139, lon: float = 77.2090):
     """Direct endpoint for AQI prediction."""
-    return predict_aqi()
+    return predict_aqi(lat, lon)
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_with_ai(request: ChatRequest):
@@ -63,7 +63,10 @@ async def chat_with_ai(request: ChatRequest):
     """
     try:
         # 1. Call predict_aqi() to get real project data
-        aqi_data = predict_aqi()
+        # Use provided lat/lon or fallback to Delhi
+        lat = request.lat or 28.6139
+        lon = request.lon or 77.2090
+        aqi_data = predict_aqi(lat, lon)
         
         # 2. Use the returned data as city_data for the AI
         # We include the city name from the request for completeness

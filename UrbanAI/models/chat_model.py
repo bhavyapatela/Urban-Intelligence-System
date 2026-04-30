@@ -4,6 +4,8 @@ from typing import Optional, Dict, Any
 class ChatRequest(BaseModel):
     city: Optional[str] = "Delhi"
     message: str
+    lat: Optional[float] = None
+    lon: Optional[float] = None
 
 class ChatResponseData(BaseModel):
     city: str
