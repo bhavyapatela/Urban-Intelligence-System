@@ -1,158 +1,358 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Urban Intelligence Dashboard</title>
+  <title>Urban Intelligence</title>
   
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="style.css?v=2" />
   
-  <!-- Leaflet Map -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="style.css" />
-  
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  
-  <!-- Leaflet Heatmap -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
 </head>
 <body>
-  <div class="dashboard-container">
-    <!-- Header -->
-    <header class="header">
-      <div class="logo-area">
-        <div class="logo-icon">🏙️</div>
-        <div class="logo-text">
-          <h1>Urban Intelligence System</h1>
-          <p>Real-time Smart City Insights & AI Assistance</p>
+  <div id="cursor-glow"></div>
+
+  <div id="intro-overlay">
+    <canvas id="intro-canvas"></canvas>
+    <div class="intro-content">
+      <div class="intro-brand"><span class="intro-logo-icon">🏙️</span> Urban Intelligence</div>
+      <h1 class="intro-headline">Experience the future of<br>Smart City Intelligence</h1>
+      <p class="intro-features">Maps &bull; Weather &bull; Pollution &bull; Traffic &bull; AI Chatbot</p>
+      <div class="intro-actions">
+        <button class="intro-btn primary" onclick="skipIntro()">Enter Dashboard</button>
+        <button class="intro-btn secondary" onclick="skipIntro()">Explore Features</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-app" class="hidden-app">
+    <nav class="navbar">
+      <div class="nav-brand">
+        <div class="nav-logo">🏙️</div>
+        <div class="nav-title">
+          <h1>Urban Intelligence</h1>
+          <p>Smart City System</p>
         </div>
       </div>
-      <div class="header-actions">
+      <ul class="nav-links">
+        <li><a href="#summary-section">Summary</a></li>
+        <li><a href="#map-section">Map</a></li>
+        <li><a href="#weather-section">Weather</a></li>
+        <li><a href="#pollution-section">Pollution</a></li>
+        <li><a href="#traffic-section">Traffic</a></li>
+        <li><a href="#insights-section">Insights</a></li>
+      </ul>
+      <div class="nav-actions">
         <div class="location-status">
           <span id="current-location-label">Location: Delhi</span>
           <small id="last-updated">Last updated: --</small>
         </div>
-        <button id="refresh-btn" class="refresh-button" onclick="loadDashboardData()" title="Refresh Data">
+        <button id="theme-toggle" class="icon-btn" title="Toggle Theme"><span id="theme-icon">☀️</span></button>
+        <button id="refresh-btn" class="icon-btn refresh-button" onclick="loadDashboardData()" title="Refresh Data">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-          <span>Refresh</span>
         </button>
-        <div class="status-indicator">
-          <span class="pulse"></span>
-          Live System Active
-        </div>
+        <div class="status-indicator"><span class="pulse"></span> Live</div>
       </div>
-    </header>
+    </nav>
 
-    <!-- Stats Overview -->
-    <section class="stats-grid">
-      <div class="stat-card" id="card-aqi">
-        <div class="stat-icon">🌫️</div>
-        <div class="stat-info">
-          <h3>AQI Index</h3>
-          <p id="aqi">--</p>
-          <span class="stat-label" id="aqi-status">Fetching...</span>
+    <div class="site-container">
+      
+      <!-- Top Summary Section -->
+      <section id="summary-section" class="content-section">
+        <div class="section-heading">
+          <h2>Live City Pulse</h2>
+          <p>Real-time metrics for your area</p>
         </div>
-      </div>
-
-      <div class="stat-card" id="card-weather">
-        <div class="stat-icon">🌡️</div>
-        <div class="stat-info">
-          <h3>Temperature</h3>
-          <p id="temperature">--</p>
-          <span class="stat-label" id="weather-status">Real-time</span>
+        <div class="stats-grid">
+          <div class="stat-card premium-card" id="card-aqi">
+            <div class="stat-icon glass-icon">🌫️</div>
+            <div class="stat-info">
+              <h3>AQI Index</h3>
+              <p><span id="aqi" data-animate-value>0</span></p>
+              <span class="stat-label" id="aqi-status">Fetching...</span>
+            </div>
+          </div>
+          <div class="stat-card premium-card" id="card-weather">
+            <div class="stat-icon glass-icon">🌡️</div>
+            <div class="stat-info">
+              <h3>Temperature</h3>
+              <p><span id="temperature" data-animate-value>0</span>°C</p>
+              <span class="stat-label" id="weather-status">Real-time</span>
+            </div>
+          </div>
+          <div class="stat-card premium-card" id="card-humidity">
+            <div class="stat-icon glass-icon">💧</div>
+            <div class="stat-info">
+              <h3>Humidity</h3>
+              <p><span id="humidity" data-animate-value>0</span>%</p>
+              <span class="stat-label">Optimal Range</span>
+            </div>
+          </div>
+          <div class="stat-card premium-card" id="card-traffic">
+            <div class="stat-icon glass-icon">🚗</div>
+            <div class="stat-info">
+              <h3>Traffic Score</h3>
+              <p><span id="traffic" data-animate-value>0</span>%</p>
+              <span class="stat-label" id="traffic-status">Normal Flow</span>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div class="stat-card" id="card-humidity">
-        <div class="stat-icon">💧</div>
-        <div class="stat-info">
-          <h3>Humidity</h3>
-          <p id="humidity">--</p>
-          <span class="stat-label">Optimal Range</span>
-        </div>
-      </div>
-
-      <div class="stat-card" id="card-traffic">
-        <div class="stat-icon">🚗</div>
-        <div class="stat-info">
-          <h3>Traffic Level</h3>
-          <p id="traffic">--</p>
-          <span class="stat-label" id="traffic-status">Normal Flow</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Main Dashboard Body -->
-    <main class="dashboard-body">
-      <!-- Map Section -->
-      <section class="map-section">
-        <div class="section-header">
-          <h2>Live City Map</h2>
-          <span class="badge">Heatmap Overlay</span>
-        </div>
-        <div id="map" class="map-container"></div>
       </section>
 
-      <!-- Charts Column -->
-      <aside class="charts-column">
-        <div class="chart-card">
-          <h3>Weather Trends (24h)</h3>
-          <div class="chart-container">
-            <canvas id="weatherChart"></canvas>
-          </div>
+      <!-- Map Section -->
+      <section id="map-section" class="content-section">
+        <div class="section-heading">
+          <h2>Interactive Map</h2>
+          <p>Explore city overlays for traffic, weather, and pollution</p>
         </div>
-        <div class="chart-card">
-          <h3>Pollution / AQI Trend</h3>
-          <div class="chart-container">
-            <canvas id="pollutionChart"></canvas>
+        <div class="map-layout premium-card">
+          <div class="map-sidebar">
+            <h3>Quick Actions</h3>
+            <button class="action-btn" onclick="centerMap()"><span class="icon">📍</span> Center on Location</button>
+            <button class="action-btn" onclick="toggleHeatmap()"><span class="icon">🔥</span> Toggle Heatmap</button>
+            <div class="sidebar-info-cards">
+              <div class="side-info"><strong>Location:</strong> <span id="map-loc">Delhi</span></div>
+              <div class="side-info"><strong>Local AQI:</strong> <span id="map-aqi" data-animate-value>0</span></div>
+            </div>
           </div>
+          <div id="map" class="map-container-large"></div>
         </div>
-      </aside>
-    </main>
+      </section>
 
-    <!-- Bottom Section -->
-    <section class="bottom-grid">
-      <!-- Traffic Graph -->
-      <div class="chart-card full-width">
-        <h3>Traffic Congestion by Hour</h3>
-        <div class="chart-container tall">
-          <canvas id="trafficChart"></canvas>
+      <!-- Weather Section -->
+      <section id="weather-section" class="content-section">
+        <div class="section-heading">
+          <h2>Weather Intelligence</h2>
+          <p>Detailed forecasts and historical trends</p>
+        </div>
+        <div class="weather-grid">
+          <div class="weather-main premium-card">
+            <div class="weather-current">
+              <div class="weather-temp-large"><span id="weather-temp-large" data-animate-value>0</span>°C</div>
+              <div class="weather-desc" id="weather-desc">Loading...</div>
+            </div>
+            <div class="weather-character" id="weather-character">
+              <div class="char-circle"></div>
+              <span class="char-emoji">🌤️</span>
+            </div>
+          </div>
+          <div class="weather-forecast premium-card">
+            <h3>Prediction Insights</h3>
+            <ul class="insight-list">
+              <li>Expected Trend: <strong id="trend-val">Stable</strong></li>
+              <li>Rain Possibility: <strong id="rain-val">Low</strong></li>
+              <li>Temp Change: <strong id="temp-change-val">Minimal</strong></li>
+            </ul>
+          </div>
+          <div class="weather-chart premium-card full-span">
+            <h3>Temperature & Humidity Trends (24h)</h3>
+            <div class="chart-container"><canvas id="weatherChart"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pollution Section -->
+      <section id="pollution-section" class="content-section">
+        <div class="section-heading">
+          <h2>Air Quality & Safety</h2>
+          <p>Monitor pollution levels and protect your health</p>
+        </div>
+        <div class="pollution-grid">
+          <div class="pollution-chart premium-card">
+            <h3>AQI Trend (Last 24h)</h3>
+            <div class="chart-container"><canvas id="pollutionChart"></canvas></div>
+          </div>
+          <div class="pollution-details premium-card">
+            <h3>Safety Recommendations</h3>
+            <ul class="safety-list" id="safety-list">
+              <li>😷 Wear Mask</li>
+              <li>🏃 Avoid outdoor workout</li>
+              <li>🪟 Keep windows closed</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="blog-grid">
+          <div class="blog-card premium-card">
+            <h4>How PM2.5 affects lungs</h4>
+            <p>Understand the invisible threat in city air...</p>
+            <a href="#">Read more &rarr;</a>
+          </div>
+          <div class="blog-card premium-card">
+            <h4>Why AQI matters</h4>
+            <p>A deep dive into how AQI is calculated...</p>
+            <a href="#">Read more &rarr;</a>
+          </div>
+          <div class="blog-card premium-card">
+            <h4>Protecting yourself</h4>
+            <p>Best practices for high pollution days...</p>
+            <a href="#">Read more &rarr;</a>
+          </div>
+          <div class="blog-card premium-card">
+            <h4>Traffic & Pollution</h4>
+            <p>The correlation between congestion and smog...</p>
+            <a href="#">Read more &rarr;</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Traffic Section -->
+      <section id="traffic-section" class="content-section">
+        <div class="section-heading">
+          <h2>Traffic Congestion</h2>
+          <p>Real-time traffic patterns and predictions</p>
+        </div>
+        
+        <div class="traffic-search premium-card">
+          <input type="text" id="traffic-search-input" placeholder="Search area in Delhi (e.g., Connaught Place)..." />
+          <button class="action-btn" onclick="searchTraffic()">Search</button>
+        </div>
+        
+        <div class="traffic-grid">
+          <div class="traffic-chart premium-card">
+            <h3>Congestion Index by Hour</h3>
+            <div class="chart-container"><canvas id="trafficChart"></canvas></div>
+          </div>
+          <div class="traffic-sidebar premium-card">
+            <h3>Busy Areas Right Now</h3>
+            <ul class="busy-list" id="busy-list">
+              <li>Connaught Place <span class="badge danger">High</span></li>
+              <li>Karol Bagh <span class="badge warning">Med</span></li>
+              <li>Lajpat Nagar <span class="badge danger">High</span></li>
+              <li>South Ex <span class="badge warning">Med</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Insights Section -->
+      <section id="insights-section" class="content-section">
+        <div class="section-heading">
+          <h2>Predictions, Recommendations & Alerts</h2>
+          <p>AI-powered city forecast and safety guidance based on weather, pollution, and traffic conditions.</p>
+        </div>
+
+        <!-- Alerts System -->
+        <div id="alerts-container" class="alerts-container">
+          <!-- Dynamic Alerts will be injected here -->
+          <div class="alert-card alert-safe premium-card">
+            <span class="alert-icon">✅</span>
+            <div class="alert-text">All conditions are currently stable.</div>
+          </div>
+        </div>
+
+        <div class="insights-grid">
+          <!-- Predictions -->
+          <div class="predictions-container">
+            <h3>Live Predictions</h3>
+            <div class="prediction-cards">
+              <div class="pred-card premium-card">
+                <h4>Weather Forecast</h4>
+                <div class="pred-content" id="pred-weather">Gathering data...</div>
+              </div>
+              <div class="pred-card premium-card">
+                <h4>AQI Forecast</h4>
+                <div class="pred-content" id="pred-aqi">Gathering data...</div>
+              </div>
+              <div class="pred-card premium-card">
+                <h4>Traffic Forecast</h4>
+                <div class="pred-content" id="pred-traffic">Gathering data...</div>
+                <div class="simulated-label">Simulated prediction</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recommendations -->
+          <div class="recommendations-container premium-card">
+            <h3>Smart Recommendations</h3>
+            <ul class="rec-list" id="rec-list">
+              <li>Fetching smart recommendations...</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Combined Chart -->
+        <div class="combined-chart premium-card">
+          <h3>Combined Forecast (Next 6 Hours)</h3>
+          <div class="chart-container"><canvas id="insightsChart"></canvas></div>
+          <p class="simulated-label" style="text-align: right; margin-top: 0.5rem;">AQI & Traffic are simulated if API is unavailable</p>
+        </div>
+      </section>
+
+    </div> <!-- End site-container -->
+
+    <footer class="site-footer">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <h3>Urban Intelligence System</h3>
+          <p>Smart City Dashboard for real-time maps, weather, pollution, traffic insights, predictions, alerts, and AI chatbot support.</p>
+        </div>
+        <div class="footer-credits">
+          <h4>Built by:</h4>
+          <ul>
+            <li>Bhavya Patela</li>
+            <li>Aayush Gurung</li>
+            <li>Anirudh Gupta</li>
+          </ul>
+        </div>
+        <div class="footer-tech">
+          <h4>Data Sources:</h4>
+          <ul>
+            <li>Open-Meteo for weather</li>
+            <li>AQI / pollution API used in the project</li>
+            <li>Leaflet / OpenStreetMap for maps</li>
+            <li>Simulated traffic data</li>
+          </ul>
         </div>
       </div>
-
-      <!-- Chatbot Support Box -->
-      <div class="chatbot-card">
-        <div class="chatbot-header">
-          <div class="bot-avatar">🤖</div>
-          <div class="bot-info">
-            <h4>Urban AI Assistant</h4>
-            <p>Always active</p>
-          </div>
-        </div>
-        <div id="chatBox" class="chat-messages">
-          <div class="message bot">
-            Hello! I'm your Urban Intelligence Assistant. How can I help you today?
-          </div>
-        </div>
-        <div class="chat-input-area">
-          <input type="text" id="userInput" placeholder="Ask about AQI, traffic, or weather..." />
-          <button id="sendBtn" onclick="sendMessage()">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
-          </button>
-        </div>
+      <div class="footer-bottom">
+        <p>Features: Maps &bull; Weather &bull; Pollution &bull; Traffic &bull; Predictions &bull; Alerts &bull; AI Chatbot</p>
+        <p>&copy; 2026 Urban Intelligence System. Built for academic/project purpose.</p>
       </div>
-    </section>
+    </footer>
   </div>
 
-  <script src="script.js"></script>
+  <!-- Floating Chatbot (Notion AI Style) -->
+  <button id="fab-chat" class="fab-button" onclick="toggleChat()">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 1.76.455 3.41 1.25 4.864L2 22l5.35-1.4A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"></path></svg>
+  </button>
+  
+  <div id="chat-modal" class="chat-modal premium-card hidden-chat">
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <div class="chat-icon">🤖</div>
+        <div class="chat-title">
+          <h4>Urban AI Assistant</h4>
+          <span>Online</span>
+        </div>
+      </div>
+      <button class="close-chat" onclick="toggleChat()">&times;</button>
+    </div>
+    
+    <div id="chatBox" class="chat-messages">
+      <div class="message bot">Hello! I'm your Urban Intelligence Assistant. How can I help you?</div>
+    </div>
+    
+    <div class="quick-actions">
+      <button onclick="sendQuickAction('Summarize weather')">Weather</button>
+      <button onclick="sendQuickAction('AQI safety tips')">Safety Tips</button>
+      <button onclick="sendQuickAction('Traffic nearby')">Traffic</button>
+    </div>
+    
+    <div class="chat-input-area">
+      <input type="text" id="userInput" placeholder="Ask Urban AI..." />
+      <button id="sendBtn" class="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <script src="script.js?v=2"></script>
 </body>
 </html>
