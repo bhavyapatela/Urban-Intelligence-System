@@ -67,29 +67,28 @@ async def chat_with_ai(request: ChatRequest):
         aqi_data = predict_aqi()
         traffic_report = get_traffic()
         
-        # 2. Prepare context for AI
-        city_data_context = f"""
-        City: {request.city}
-        Weather: {weather_report}
-        Pollution/AQI Info: {aqi_data}
-        Traffic: {traffic_report}
-        """
+        # 2. Create city_data dictionary with all values
+        city_data = {
+            "city": request.city,
+            "weather": weather_report,
+            "pollution": aqi_data,
+            "traffic": traffic_report,
+            "predicted_aqi": aqi_data.get("predicted_aqi")
+        }
         
-        # 3. Generate AI response
-        answer = generate_answer(request.question, city_data_context)
+        # 3. Pass user question and collected city_data dictionary to generate_answer()
+        answer = generate_answer(request.question, city_data)
         
-        # 4. Construct structured response
-        response_data = ChatResponseData(
-            city=request.city,
-            weather=weather_report,
-            pollution=aqi_data,
-            traffic=traffic_report,
-            predicted_aqi=aqi_data.get("predicted_aqi")
-        )
-        
+        # 4. Construct and return structured response
         return ChatResponse(
             answer=answer,
-            data=response_data
+            data=ChatResponseData(**city_data)
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Chat Error: {str(e)}"
         )
         
     except Exception as e:
