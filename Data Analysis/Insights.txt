@@ -1,13 +1,74 @@
-1. Congestion levels peak during morning (8–10 AM) and evening (6–8 PM) hours, indicating typical office commute patterns and high road usage during these periods.
+📊 Exploratory Data Analysis (EDA) Insights
 
-2. Traffic congestion remains consistently high during weekdays (days 0–4) and drops significantly on weekends (days 5–6), indicating that work-related travel is a major contributor to urban traffic.
+🧾 Dataset Overview
+Total records: 2208 entries (hourly data)
+Time period: October to December
+Features include:
+Environmental: temperature, humidity
+Pollution: PM10, PM2.5, NO₂, CO, AQI
+Traffic: traffic_index
+Time-based: hour, day, month, day_of_week, weekend flag
+🧹 Data Quality
+✅ No missing values across all columns
+✅ Data is already clean and structured
+✅ Feature engineering performed:
+Extracted time-based features (hour, day, month)
+Created is_weekend and day_type
+Generated target variable: aqi_next (for prediction)
 
-3. Weekdays show significantly higher congestion compared to weekends, suggesting that work-related travel is a major contributor to urban traffic.
+🌡️ Environmental Insights
+Average temperature: ~20.7°C
+Temperature range: 8.6°C to 34.6°C
+Humidity varies widely (21% to ~99%), indicating seasonal/weather variation
 
-4. AQI levels show a steady increase throughout the day, with the highest values observed during evening hours. This suggests that air pollution accumulates over time, likely due to increased human activities and traffic during the day.
+👉 Insight: Weather conditions fluctuate significantly and can influence pollution levels.
 
-5. While some high congestion instances correspond to elevated AQI levels, the overall distribution is scattered, indicating that traffic alone is not the sole determinant of air pollution. Other environmental factors likely play a significant role.
+🌫️ Air Pollution Insights
+Average AQI: ~173 (Moderate to Unhealthy)
+Maximum AQI: ~290 (Very Poor category)
+PM2.5 and PM10 show high variability:
+PM10 max: 456
+PM2.5 max: 333
 
-6. Most observations occurred under no-rain conditions, where congestion levels vary significantly due to other factors such as time of day or traffic demand. Due to very limited data during rainfall, no strong relationship between precipitation and congestion can be conclusively established.
+👉 Insight: Air quality frequently reaches unhealthy levels, making prediction highly relevant.
+High spikes indicate pollution events or peak traffic periods.
 
-7. The majority of observations occur under high visibility conditions, where congestion levels still vary significantly. Due to the lack of sufficient low-visibility data points, no clear relationship between visibility and traffic congestion can be established.
+🚗 Traffic Insights
+Traffic Index range: 0.05 to 1.0
+Average: ~0.43
+
+👉 Insight: Traffic intensity varies significantly across time.
+Likely contributor to pollution spikes (especially CO, NO₂).
+
+⏰ Temporal Patterns
+Data captured hourly → strong time-based patterns
+Features like hour, day_of_week, and is_weekend are important
+
+👉 Observations:
+Pollution and traffic vary by:
+Time of day (rush hours)
+Weekdays vs weekends
+Weekend indicator helps model behavioral differences
+
+🔗 Feature Relationships (from visualizations)
+
+📈 AQI vs Pollutants
+Strong positive correlation with:
+PM2.5
+PM10
+NO₂
+CO
+
+👉 Insight: AQI is heavily driven by pollutant concentrations (expected but validated)
+
+🚦 Traffic vs Pollution
+Traffic index shows correlation with:
+CO
+NO₂
+
+👉 Insight: Vehicular emissions are a major contributor to air pollution
+
+🌡️ Weather vs Pollution
+Temperature & humidity show moderate influence
+
+👉 Insight: Weather conditions impact pollution dispersion and concentration
