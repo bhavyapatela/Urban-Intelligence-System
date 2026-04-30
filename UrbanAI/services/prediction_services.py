@@ -1,4 +1,8 @@
+import os
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
 import joblib
 from datetime import datetime
 import requests
@@ -57,7 +61,7 @@ def get_live_pollution():
     params = {
         "lat": 28.6139,
         "lon": 77.2090,
-        "appid": "5711ba1f7e117df8f9c2c4f2accc3f7d"
+        "appid": os.getenv("OPENWEATHER_API_KEY")
     }
 
     response = requests.get(url, params=params)
