@@ -7,9 +7,9 @@ class ChatRequest(BaseModel):
 
 class ChatResponseData(BaseModel):
     city: str
-    weather: Dict[str, Any] = {}
-    pollution: Dict[str, Any] = {}
-    traffic: Dict[str, Any] = {}
+    weather: Any = {}
+    pollution: Any = {}
+    traffic: Any = {}
     predicted_aqi: Optional[float] = None
 
 class ChatResponse(BaseModel):

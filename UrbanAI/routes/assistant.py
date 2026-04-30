@@ -9,11 +9,6 @@ from UrbanAI.services.ai_service import generate_answer
 
 router = APIRouter()
 
-class ChatInput(BaseModel):
-    message: str
-
-class ChatOutput(BaseModel):
-    response: str
 
 @router.post("/ask")
 async def ask_ai(query: UserQuery):
@@ -60,18 +55,42 @@ def get_prediction():
     """Direct endpoint for AQI prediction."""
     return predict_aqi()
 
-@router.post("/chat", response_model=ChatOutput)
-async def chat_with_ai(request: ChatInput):
+@router.post("/chat", response_model=ChatResponse)
+async def chat_with_ai(request: ChatRequest):
     """
-    Main chatbot endpoint for Urban Intelligence System.
-    Generates a response using the AI service.
+    Improved chatbot endpoint for Urban Intelligence System.
+    Integrates real-time data from weather, pollution, and traffic services.
     """
     try:
-        # Call existing AI service function
-        # Passing empty city_data as per the current service signature requirements
-        answer = generate_answer(request.message, "")
+        # 1. Collect real data from services
+        weather_report = get_weather(request.city)
+        aqi_data = predict_aqi()
+        traffic_report = get_traffic()
         
-        return ChatOutput(response=answer)
+        # 2. Prepare context for AI
+        city_data_context = f"""
+        City: {request.city}
+        Weather: {weather_report}
+        Pollution/AQI Info: {aqi_data}
+        Traffic: {traffic_report}
+        """
+        
+        # 3. Generate AI response
+        answer = generate_answer(request.question, city_data_context)
+        
+        # 4. Construct structured response
+        response_data = ChatResponseData(
+            city=request.city,
+            weather=weather_report,
+            pollution=aqi_data,
+            traffic=traffic_report,
+            predicted_aqi=aqi_data.get("predicted_aqi")
+        )
+        
+        return ChatResponse(
+            answer=answer,
+            data=response_data
+        )
         
     except Exception as e:
         raise HTTPException(

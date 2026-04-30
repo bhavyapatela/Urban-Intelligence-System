@@ -1,6 +1,6 @@
 import requests
 
-API_KEY = "YOUR_OPENWEATHER_KEY"
+API_KEY = "5711ba1f7e117df8f9c2c4f2accc3f7d"
 
 def get_weather(city="Delhi"):
 
