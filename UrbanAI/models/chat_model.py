@@ -3,7 +3,7 @@ from typing import Optional, Dict, Any
 
 class ChatRequest(BaseModel):
     city: str
-    question: str
+    message: str
 
 class ChatResponseData(BaseModel):
     city: str
@@ -13,5 +13,5 @@ class ChatResponseData(BaseModel):
     predicted_aqi: Optional[float] = None
 
 class ChatResponse(BaseModel):
-    answer: str
+    response: str
     data: ChatResponseData

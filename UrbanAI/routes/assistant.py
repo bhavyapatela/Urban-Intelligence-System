@@ -59,36 +59,38 @@ def get_prediction():
 async def chat_with_ai(request: ChatRequest):
     """
     Improved chatbot endpoint for Urban Intelligence System.
-    Integrates real-time data from weather, pollution, and traffic services.
+    Uses real-time data from the AQI prediction service.
     """
     try:
-        # 1. Collect real data from services
-        weather_report = get_weather(request.city)
+        # 1. Call predict_aqi() to get real project data
         aqi_data = predict_aqi()
-        traffic_report = get_traffic()
         
-        # 2. Create city_data dictionary with all values
+        # 2. Use the returned data as city_data for the AI
+        # We include the city name from the request for completeness
         city_data = {
             "city": request.city,
-            "weather": weather_report,
-            "pollution": aqi_data,
-            "traffic": traffic_report,
-            "predicted_aqi": aqi_data.get("predicted_aqi")
+            **aqi_data
         }
         
-        # 3. Pass user question and collected city_data dictionary to generate_answer()
-        answer = generate_answer(request.question, city_data)
+        # 3. Pass request.message and city_data to generate_answer()
+        ai_response = generate_answer(request.message, city_data)
         
-        # 4. Construct and return structured response
-        return ChatResponse(
-            answer=answer,
-            data=ChatResponseData(**city_data)
+        # 4. Return both the AI response and the data used
+        # Mapping aqi_data fields to ChatResponseData structure
+        response_data = ChatResponseData(
+            city=request.city,
+            weather=f"Temp: {aqi_data.get('temperature')}°C, Humidity: {aqi_data.get('humidity')}%",
+            pollution={
+                "pm25": aqi_data.get("pm25"),
+                "pm10": aqi_data.get("pm10")
+            },
+            traffic=f"Traffic Index: {aqi_data.get('traffic')}",
+            predicted_aqi=aqi_data.get("predicted_aqi")
         )
         
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Chat Error: {str(e)}"
+        return ChatResponse(
+            response=ai_response,
+            data=response_data
         )
         
     except Exception as e:
