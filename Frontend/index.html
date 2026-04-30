@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urban Intelligence Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Urban Intelligence System</h1>
+      <p>Live AQI, weather, traffic insights with AI chatbot</p>
+    </header>
+
+    <section class="cards">
+      <div class="card">
+        <h3>AQI</h3>
+        <p id="aqi">--</p>
+      </div>
+
+      <div class="card">
+        <h3>Temperature</h3>
+        <p id="temperature">--</p>
+      </div>
+
+      <div class="card">
+        <h3>Humidity</h3>
+        <p id="humidity">--</p>
+      </div>
+
+      <div class="card">
+        <h3>Traffic</h3>
+        <p id="traffic">--</p>
+      </div>
+    </section>
+
+    <section class="chat-section">
+      <h2>Ask Urban AI</h2>
+
+      <div id="chatBox" class="chat-box">
+        <div class="bot message">
+          Hi! Ask me about AQI, weather, pollution, or traffic.
+        </div>
+      </div>
+
+      <div class="chat-input">
+        <input id="userInput" type="text" placeholder="Ask something..." />
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

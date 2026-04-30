@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 
 class ChatRequest(BaseModel):
-    city: str
+    city: Optional[str] = "Delhi"
     message: str
 
 class ChatResponseData(BaseModel):

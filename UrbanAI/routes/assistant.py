@@ -75,7 +75,9 @@ async def chat_with_ai(request: ChatRequest):
         # 3. Keyword-based Intent Detection
         message = request.message.lower()
         intent = "general"
-        if any(w in message for w in ["pollution", "aqi", "air", "smog"]):
+        if any(w in message for w in ["help", "do", "can you", "capabilities", "features"]):
+            intent = "help"
+        elif any(w in message for w in ["pollution", "aqi", "air", "smog"]):
             intent = "pollution"
         elif any(w in message for w in ["weather", "temp", "hot", "cold", "rain", "sunny"]):
             intent = "weather"

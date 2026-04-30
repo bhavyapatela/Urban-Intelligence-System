@@ -22,20 +22,22 @@ def generate_answer(question, city_data, intent="general"):
     - City Data: {city_data}
     
     Rules:
-    1. If intent is POLLUTION: Focus heavily on AQI levels and respiratory safety.
-    2. If intent is WEATHER: Focus on temperature, humidity, and outdoor conditions.
-    3. If intent is TRAFFIC: Focus on congestion levels and travel advice.
-    4. If intent is GENERAL: Provide a balanced overview of all available metrics.
+    1. If intent is HELP: Explicitly list that you can provide AQI insights, weather info, and traffic updates. Be helpful and welcoming.
+    2. If intent is POLLUTION: Focus heavily on AQI levels and respiratory safety using the provided data.
+    3. If intent is WEATHER: Focus on temperature, humidity, and outdoor conditions using the provided data.
+    4. If intent is TRAFFIC: Focus on congestion levels and travel advice using the provided data.
+    5. If intent is GENERAL: Be conversational. If the user is just saying hello, respond naturally. Only provide a data summary if it seems relevant to their question.
     
-    Analyze AQI:
-       - > 200: State it's unhealthy and suggest staying indoors.
-       - 100-200: State it's moderate and suggest caution.
-       - < 100: State it's safe.
+    Data Analysis (only if intent is POLLUTION, WEATHER, TRAFFIC, or a data-focused GENERAL query):
+       - Analyze AQI from City Data:
+         - > 200: Unhealthy (stay indoors).
+         - 100-200: Moderate (caution).
+         - < 100: Safe.
     
     Response Format:
-    - 3-4 lines maximum.
-    - Focus ONLY on data relevant to the {intent} intent. Avoid unnecessary details.
-    - Simple English and specific actionable advice.
+    - 2-3 lines maximum.
+    - Be concise and actionable.
+    - If intent is HELP, do NOT mention specific current data unless asked.
     """
 
     response = model.generate_content(prompt)
