@@ -8,32 +8,34 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 model = genai.GenerativeModel("models/gemini-3.1-flash-lite-preview")
 
-def generate_answer(question, city_data):
+def generate_answer(question, city_data, intent="general"):
     """
     Generates a structured, intelligent response as an Urban Intelligence Assistant.
-    Uses city_data to provide actionable advice.
+    Focuses the response based on the detected intent.
     """
     prompt = f"""
     You are an Urban Intelligence Assistant.
     
+    Current Intent: {intent.upper()}
     Input Data:
     - User Question: {question}
     - City Data: {city_data}
     
     Rules:
-    1. Analyze AQI:
+    1. If intent is POLLUTION: Focus heavily on AQI levels and respiratory safety.
+    2. If intent is WEATHER: Focus on temperature, humidity, and outdoor conditions.
+    3. If intent is TRAFFIC: Focus on congestion levels and travel advice.
+    4. If intent is GENERAL: Provide a balanced overview of all available metrics.
+    
+    Analyze AQI:
        - > 200: State it's unhealthy and suggest staying indoors.
        - 100-200: State it's moderate and suggest caution.
        - < 100: State it's safe.
-    2. Briefly mention temperature and humidity.
-    3. Mention the traffic condition (low, moderate, or high).
-    4. Handle any missing data gracefully without technical errors.
     
     Response Format:
     - 3-4 lines maximum.
-    - Simple English.
-    - Must include specific actionable advice based on the data.
-    - No generic answers. Always use the provided data points.
+    - Focus ONLY on data relevant to the {intent} intent. Avoid unnecessary details.
+    - Simple English and specific actionable advice.
     """
 
     response = model.generate_content(prompt)

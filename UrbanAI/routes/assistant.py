@@ -72,8 +72,18 @@ async def chat_with_ai(request: ChatRequest):
             **aqi_data
         }
         
-        # 3. Pass request.message and city_data to generate_answer()
-        ai_response = generate_answer(request.message, city_data)
+        # 3. Keyword-based Intent Detection
+        message = request.message.lower()
+        intent = "general"
+        if any(w in message for w in ["pollution", "aqi", "air", "smog"]):
+            intent = "pollution"
+        elif any(w in message for w in ["weather", "temp", "hot", "cold", "rain", "sunny"]):
+            intent = "weather"
+        elif any(w in message for w in ["traffic", "road", "congestion", "jam", "route"]):
+            intent = "traffic"
+            
+        # 4. Pass request.message, city_data, and detected intent to generate_answer()
+        ai_response = generate_answer(request.message, city_data, intent)
         
         # 4. Return both the AI response and the data used
         # Mapping aqi_data fields to ChatResponseData structure
