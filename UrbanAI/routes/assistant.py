@@ -1,12 +1,19 @@
 from fastapi import APIRouter, HTTPException
 from UrbanAI.models.query_model import UserQuery
 from UrbanAI.models.chat_model import ChatRequest, ChatResponse, ChatResponseData
+from pydantic import BaseModel
 from UrbanAI.services.weather_service import get_weather
 from UrbanAI.services.traffic_service import get_traffic
 from UrbanAI.services.prediction_services import predict_aqi
 from UrbanAI.services.ai_service import generate_answer
 
 router = APIRouter()
+
+class ChatInput(BaseModel):
+    message: str
+
+class ChatOutput(BaseModel):
+    response: str
 
 @router.post("/ask")
 async def ask_ai(query: UserQuery):
@@ -53,29 +60,21 @@ def get_prediction():
     """Direct endpoint for AQI prediction."""
     return predict_aqi()
 
-@router.post("/chat", response_model=ChatResponse)
-async def chat_with_ai(request: ChatRequest):
+@router.post("/chat", response_model=ChatOutput)
+async def chat_with_ai(request: ChatInput):
     """
     Main chatbot endpoint for Urban Intelligence System.
-    Provides structured intelligence data including weather, pollution, and traffic.
+    Generates a response using the AI service.
     """
     try:
-        # Integrated data for the city
-        # Note: In production, these would call real services based on request.city
-        mock_data = ChatResponseData(
-            city=request.city,
-            weather={"temp": "25°C", "condition": "Sunny"},
-            pollution={"aqi": 42, "status": "Good"},
-            traffic={"level": "Low", "congestion": "Normal"},
-            predicted_aqi=160.04
-        )
-
-        return ChatResponse(
-            answer=f"The current intelligence report for {request.city} indicates stable conditions. Temp: {mock_data.weather['temp']}, Skies: {mock_data.weather['condition']}.",
-            data=mock_data
-        )
+        # Call existing AI service function
+        # Passing empty city_data as per the current service signature requirements
+        answer = generate_answer(request.message, "")
+        
+        return ChatOutput(response=answer)
+        
     except Exception as e:
-        return ChatResponse(
-            answer="Sorry, I encountered an error processing your intelligence request.",
-            data=ChatResponseData(city=request.city)
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Chat Error: {str(e)}"
         )
