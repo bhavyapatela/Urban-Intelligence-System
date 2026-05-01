@@ -391,6 +391,11 @@ async function loadDashboardData() {
     if (structuredWeather.status === "fulfilled" && !structuredWeather.value.error) {
       lastWeatherData = structuredWeather.value;
       updateWeatherDashboard(lastWeatherData);
+    } else if (weatherTrends.status === "fulfilled") {
+      // Backend /weather unreachable (e.g., Netlify deploy) — build from Open-Meteo direct data
+      console.warn("Backend /weather unavailable. Building weather dashboard from Open-Meteo fallback.");
+      lastWeatherData = buildWeatherDataFromOpenMeteo(weatherTrends.value);
+      updateWeatherDashboard(lastWeatherData);
     } else {
       document.getElementById('weather-card-loading').classList.add('hidden');
       document.getElementById('weather-card-error').classList.remove('hidden');
@@ -420,10 +425,72 @@ async function loadDashboardData() {
 }
 
 async function fetchWeatherTrends() {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLocation.lat}&longitude=${currentLocation.lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability&current_weather=true&timezone=auto&forecast_days=1`;
+  // Fetch 7 days with all fields needed to power the full weather dashboard without the backend
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLocation.lat}&longitude=${currentLocation.lon}`
+    + `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,pressure_msl,wind_speed_10m`
+    + `&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,wind_speed_10m,apparent_temperature`
+    + `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max`
+    + `&timezone=auto&forecast_days=7`;
   const response = await fetch(url);
   if (!response.ok) throw new Error("Open-Meteo API Error");
   return await response.json();
+}
+
+/**
+ * Converts raw Open-Meteo API response into the structured format
+ * expected by updateWeatherDashboard() — used as a fallback when
+ * the FastAPI backend /weather endpoint is unreachable (e.g., Netlify deploy).
+ */
+function buildWeatherDataFromOpenMeteo(raw) {
+  const WMO = {
+    0:"Sunny",1:"Mainly Clear",2:"Partly Cloudy",3:"Overcast",
+    45:"Foggy",48:"Hazy",51:"Drizzle",53:"Drizzle",55:"Drizzle",
+    61:"Rainy",63:"Rainy",65:"Heavy Rain",71:"Snowy",73:"Snowy",75:"Snowy",
+    80:"Rain Showers",81:"Rain Showers",82:"Rain Showers",
+    95:"Thunderstorm",96:"Stormy",99:"Stormy"
+  };
+  const getCondition = code => WMO[code] || "Clear";
+
+  // current block (new Open-Meteo 'current' key)
+  const cur = raw.current || raw.current_weather || {};
+  const hourly = raw.hourly || {};
+  const daily  = raw.daily  || {};
+
+  const forecast = [];
+  const days = (daily.time || []).length;
+  for (let i = 0; i < days; i++) {
+    forecast.push({
+      date:      daily.time[i],
+      max_temp:  daily.temperature_2m_max[i],
+      min_temp:  daily.temperature_2m_min[i],
+      condition: getCondition(daily.weather_code[i]),
+      sunrise:   (daily.sunrise[i] || '').split('T')[1] || '--',
+      sunset:    (daily.sunset[i]  || '').split('T')[1] || '--',
+      uv_index:  daily.uv_index_max ? daily.uv_index_max[i] : '--'
+    });
+  }
+
+  return {
+    city:          currentLocation.label || 'Delhi',
+    temperature:   cur.temperature_2m   ?? cur.temperature ?? 0,
+    feels_like:    cur.apparent_temperature ?? (cur.temperature_2m ?? 0) - 2,
+    condition:     getCondition(cur.weather_code ?? cur.weathercode ?? 0),
+    humidity:      cur.relative_humidity_2m ?? (hourly.relative_humidity_2m ? hourly.relative_humidity_2m[0] : 0),
+    wind_speed:    cur.wind_speed_10m ?? 0,
+    pressure:      cur.pressure_msl   ?? 1013,
+    precipitation: cur.precipitation  ?? 0,
+    rain_probability: hourly.precipitation_probability ? hourly.precipitation_probability[0] : 0,
+    forecast,
+    hourly: {
+      time:              hourly.time || [],
+      temperature:       hourly.temperature_2m || [],
+      rain_probability:  hourly.precipitation_probability || [],
+      humidity:          hourly.relative_humidity_2m || [],
+      wind_speed:        hourly.wind_speed_10m || []
+    },
+    last_updated: new Date().toLocaleString(),
+    source: 'Open-Meteo (Direct)'
+  };
 }
 
 async function fetchAQITrends() {
