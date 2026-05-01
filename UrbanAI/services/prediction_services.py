@@ -31,9 +31,6 @@ def categorize_aqi(aqi):
 
 
 # ==============================
-# GET LIVE WEATHER (NO CACHE)
-# ==============================
-# ==============================
 # GET LIVE WEATHER
 # ==============================
 def get_current_weather(lat=28.6139, lon=77.2090):
@@ -42,10 +39,12 @@ def get_current_weather(lat=28.6139, lon=77.2090):
         api_key = os.getenv("OPENWEATHER_API_KEY")
         url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
         
+        print(f"DEBUG: Fetching weather for coords ({lat}, {lon}) from OpenWeatherMap API...")
         response = requests.get(url, timeout=5)
         data = response.json()
         
         if response.status_code == 200:
+            print(f"DEBUG: Weather data received: {data['main']['temp']}°C, {data['main']['humidity']}% humidity.")
             return {
                 "temperature": data["main"]["temp"],
                 "humidity": data["main"]["humidity"]
@@ -66,6 +65,7 @@ def get_current_weather(lat=28.6139, lon=77.2090):
                 "current": ["temperature_2m", "relative_humidity_2m"],
                 "timezone": "Asia/Kolkata"
             }
+            print(f"DEBUG: Fetching fallback weather from Open-Meteo for ({lat}, {lon})...")
             response = openmeteo.weather_api(url, params=params)[0]
             current = response.Current()
             return {
@@ -73,6 +73,7 @@ def get_current_weather(lat=28.6139, lon=77.2090):
                 "humidity": current.Variables(1).Value()
             }
         except Exception:
+            print("CRITICAL: All weather sources failed. Using fallback defaults.")
             return {"temperature": 28.5, "humidity": 40}
 
 
@@ -89,6 +90,7 @@ def get_live_pollution(lat=28.6139, lon=77.2090):
             "appid": os.getenv("OPENWEATHER_API_KEY")
         }
 
+        print(f"DEBUG: Fetching live pollution for ({lat}, {lon}) from OpenWeatherMap API...")
         response = requests.get(url, params=params, timeout=5)
         data = response.json()
 
@@ -99,7 +101,8 @@ def get_live_pollution(lat=28.6139, lon=77.2090):
             "pm10": comp["pm10"]
         }
 
-    except Exception:
+    except Exception as e:
+        print(f"Error fetching live pollution: {e}. Using fallback defaults.")
         return {"pm2_5": 50, "pm10": 100}
 
 
@@ -109,6 +112,8 @@ def get_live_pollution(lat=28.6139, lon=77.2090):
 def predict_aqi(lat=28.6139, lon=77.2090):
     now = datetime.now()
 
+    print(f"DEBUG: Starting AQI prediction for Coords: ({lat}, {lon})")
+    
     weather = get_current_weather(lat, lon)
     pollution = get_live_pollution(lat, lon)
 
@@ -132,7 +137,7 @@ def predict_aqi(lat=28.6139, lon=77.2090):
     prediction = model.predict(features)[0]
     prediction = round(float(prediction), 2)
 
-    return {
+    result = {
         "predicted_aqi": prediction,
         "category": categorize_aqi(prediction),
         "pm25": round(pollution["pm2_5"], 2),
@@ -141,3 +146,6 @@ def predict_aqi(lat=28.6139, lon=77.2090):
         "humidity": round(float(weather["humidity"]), 2),
         "timestamp": now.strftime("%Y-%m-%d %H:%M:%S")
     }
+    
+    print(f"DEBUG: Prediction complete. Predicted AQI: {prediction}")
+    return result

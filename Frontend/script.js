@@ -2,6 +2,10 @@ const API_BASE_URL = "http://127.0.0.1:8000";
 
 // Global state
 let weatherChart, pollutionChart, trafficChart, insightsChart;
+let hourlyTempChart, rainProbChart;
+let tempVsFeelsChart, humidityRainChart, windTrendChart;
+let lastWeatherData = null;
+let selectedDayIndex = -1; // -1 for Today/Current
 let map, heatLayer, userMarker;
 let isHeatmapVisible = true;
 let isChatOpen = false;
@@ -208,6 +212,72 @@ function initCharts() {
     });
   }
 
+  // New Weather Hourly Charts
+  const ctxHourly = document.getElementById('hourlyTempChart');
+  if(ctxHourly) {
+    hourlyTempChart = new Chart(ctxHourly.getContext('2d'), {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Temp (°C)', data: [], borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', fill: true, tension: 0.4 }] },
+      options: { ...chartOptions, scales: { ...chartOptions.scales, y: { ticks: { color: '#94a3b8' } } } }
+    });
+  }
+
+  const ctxRain = document.getElementById('rainProbChart');
+  if(ctxRain) {
+    rainProbChart = new Chart(ctxRain.getContext('2d'), {
+      type: 'bar',
+      data: { labels: [], datasets: [{ label: 'Rain %', data: [], backgroundColor: '#6366f1', borderRadius: 5 }] },
+      options: { ...chartOptions, scales: { ...chartOptions.scales, y: { max: 100, min: 0, ticks: { color: '#94a3b8' } } } }
+    });
+  }
+
+  // Weather Insights Charts
+  const ctxTvF = document.getElementById('tempVsFeelsChart');
+  if(ctxTvF) {
+    tempVsFeelsChart = new Chart(ctxTvF.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'Temp', data: [], borderColor: '#38bdf8', tension: 0.4, fill: false },
+          { label: 'Feels Like', data: [], borderColor: '#f472b6', tension: 0.4, borderDash: [5, 5], fill: false }
+        ]
+      },
+      options: chartOptions
+    });
+  }
+
+  const ctxHumRain = document.getElementById('humidityRainChart');
+  if(ctxHumRain) {
+    humidityRainChart = new Chart(ctxHumRain.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'Humidity', data: [], backgroundColor: 'rgba(56, 189, 248, 0.2)', type: 'line', fill: true, tension: 0.4 },
+          { label: 'Rain %', data: [], backgroundColor: '#6366f1', borderRadius: 4 }
+        ]
+      },
+      options: { ...chartOptions, scales: { ...chartOptions.scales, y: { max: 100, min: 0 } } }
+    });
+  }
+
+  const ctxWind = document.getElementById('windTrendChart');
+  if(ctxWind) {
+    windTrendChart = new Chart(ctxWind.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{ label: 'Wind', data: [], borderColor: '#fbbf24', tension: 0.4, pointRadius: 0, borderWidth: 2 }]
+      },
+      options: {
+        ...chartOptions,
+        scales: { x: { display: false }, y: { display: true, ticks: { display: false } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
   // Combined Insights Chart
   const ctxInsights = document.getElementById('insightsChart');
   if(ctxInsights) {
@@ -250,8 +320,12 @@ async function loadDashboardData() {
     const weatherTrendsPromise = fetchWeatherTrends();
     const aqiTrendsPromise = fetchAQITrends();
 
-    const [backendData, weatherTrends, aqiTrends] = await Promise.allSettled([
-      backendPromise, weatherTrendsPromise, aqiTrendsPromise
+    // 3. Fetch Structured Weather Data
+    const weatherDataPromise = fetch(`${API_BASE_URL}/weather?city=${currentLocation.label || 'Delhi'}&lat=${currentLocation.lat}&lon=${currentLocation.lon}`)
+      .then(res => res.json());
+
+    const [backendData, weatherTrends, aqiTrends, structuredWeather] = await Promise.allSettled([
+      backendPromise, weatherTrendsPromise, aqiTrendsPromise, weatherDataPromise
     ]);
 
     // Create current state object to pass to insights
@@ -286,12 +360,43 @@ async function loadDashboardData() {
       
       updateTrafficChart();
     } else {
-      showFallbackData();
-      state.aqi = 42; state.temp = 22.5; state.humidity = 45; state.traffic = 0.2;
+      console.warn("Backend unavailable, using Open-Meteo fallback.");
+      // Use Open-Meteo current weather if backend fails
+      if (weatherTrends.status === "fulfilled") {
+        state.temp = weatherTrends.value.current_weather.temperature;
+        state.humidity = weatherTrends.value.hourly.relative_humidity_2m[0];
+        
+        updateElementWithAnimation("temperature", state.temp);
+        updateElementWithAnimation("weather-temp-large", state.temp);
+        updateElementWithAnimation("humidity", state.humidity);
+      } else {
+        showFallbackData();
+      }
+      
+      // Use Open-Meteo AQI if backend fails
+      if (aqiTrends.status === "fulfilled") {
+        state.aqi = aqiTrends.value.hourly.us_aqi[0];
+        updateElementWithAnimation("aqi", state.aqi);
+        updateElementWithAnimation("map-aqi", state.aqi);
+        updateAQIStatus(state.aqi);
+      }
+
+      state.traffic = 0.2;
+      updateElementWithAnimation("traffic", 20);
+      updateTrafficStatus(0.2);
+      updateTrafficChart();
+    }
+
+    // Handle Structured Weather Dashboard
+    if (structuredWeather.status === "fulfilled" && !structuredWeather.value.error) {
+      lastWeatherData = structuredWeather.value;
+      updateWeatherDashboard(lastWeatherData);
+    } else {
+      document.getElementById('weather-card-loading').classList.add('hidden');
+      document.getElementById('weather-card-error').classList.remove('hidden');
     }
 
     if (weatherTrends.status === "fulfilled") {
-      updateWeatherChart(weatherTrends.value);
       updateWeatherPrediction(weatherTrends.value);
     }
 
@@ -337,29 +442,248 @@ function updateWeatherChart(data) {
   weatherChart.update();
 }
 
+function updateWeatherDashboard(data, dayIndex = -1) {
+  // Hide loading, show content
+  document.getElementById('weather-card-loading').classList.add('hidden');
+  document.getElementById('weather-card-error').classList.add('hidden');
+  document.getElementById('weather-main-content').classList.remove('hidden');
+
+  const isToday = dayIndex === -1;
+  const targetData = isToday ? data : data.forecast[dayIndex];
+  
+  // Update Hero Section
+  document.getElementById('weather-city').textContent = data.city;
+  document.getElementById('main-temp').textContent = Math.round(isToday ? data.temperature : targetData.max_temp);
+  document.getElementById('main-condition').textContent = targetData.condition;
+  document.getElementById('feels-like').textContent = Math.round(isToday ? data.feels_like : targetData.max_temp - 2);
+  document.getElementById('weather-source').textContent = data.source;
+  
+  // Update Mode Badge & Reset Btn
+  const badge = document.getElementById('weather-report-mode');
+  const resetBtn = document.getElementById('weather-reset-btn');
+  if (isToday) {
+    badge.textContent = "Current Weather";
+    badge.classList.remove('report-mode');
+    resetBtn.classList.add('hidden');
+    document.getElementById('day-report-details').classList.add('hidden');
+  } else {
+    badge.textContent = "Forecast: " + new Date(targetData.date).toLocaleDateString('en-US', { weekday: 'long' });
+    badge.classList.add('report-mode');
+    resetBtn.classList.remove('hidden');
+    
+    // Show Day Report
+    document.getElementById('day-report-details').classList.remove('hidden');
+    document.getElementById('r-sunrise').textContent = targetData.sunrise || "--";
+    document.getElementById('r-sunset').textContent = targetData.sunset || "--";
+    document.getElementById('r-temp-range').textContent = `${Math.round(targetData.max_temp)}° / ${Math.round(targetData.min_temp)}°`;
+    document.getElementById('r-uv').textContent = targetData.uv_index || "--";
+    
+    // Smart Recommendation
+    const recBox = document.getElementById('weather-recommendation');
+    if (targetData.condition.includes("Rain")) recBox.textContent = "🌧️ Recommendation: High chance of rain. Carry an umbrella and expect traffic delays.";
+    else if (targetData.max_temp > 35) recBox.textContent = "🥵 Recommendation: High heat detected. Stay hydrated and avoid outdoor activity during mid-day.";
+    else if (targetData.min_temp < 15) recBox.textContent = "🧥 Recommendation: Chilly morning expected. Wear a light jacket.";
+    else recBox.textContent = "✅ Recommendation: Pleasant weather. Great day for outdoor exploration.";
+  }
+
+  // Update Metrics (using averages for forecast days)
+  document.getElementById('m-humidity').textContent = `${isToday ? data.humidity : 50}%`;
+  document.getElementById('m-wind').textContent = `${isToday ? data.wind_speed : 10} km/h`;
+  document.getElementById('m-pressure').textContent = `${isToday ? data.pressure : 1013} hPa`;
+  document.getElementById('m-rain').textContent = `${isToday ? data.rain_probability : (targetData.condition.includes("Rain") ? 80 : 10)}%`;
+
+  // Update Charts (slice 24h for selected day)
+  const startIndex = isToday ? 0 : dayIndex * 24;
+  const endIndex = startIndex + 24;
+  
+  const labels = data.hourly.time.slice(startIndex, endIndex).map(t => t.split('T')[1].substring(0, 5));
+  const temps = data.hourly.temperature.slice(startIndex, endIndex);
+  const rains = data.hourly.rain_probability.slice(startIndex, endIndex);
+  
+  if (hourlyTempChart) {
+    hourlyTempChart.data.labels = labels;
+    hourlyTempChart.data.datasets[0].data = temps;
+    hourlyTempChart.update();
+  }
+  
+  if (rainProbChart) {
+    rainProbChart.data.labels = labels;
+    rainProbChart.data.datasets[0].data = rains;
+    rainProbChart.update();
+  }
+
+  // Show Insights Panel
+  document.getElementById('weather-insights-panel').classList.remove('hidden');
+
+  // Update Insights Charts
+  const hums = data.hourly.humidity.slice(startIndex, endIndex);
+  const winds = data.hourly.wind_speed.slice(startIndex, endIndex);
+  
+  if (tempVsFeelsChart) {
+    tempVsFeelsChart.data.labels = labels;
+    tempVsFeelsChart.data.datasets[0].data = temps;
+    tempVsFeelsChart.data.datasets[1].data = temps.map(t => t - 2); // Approximation if feels_like hourly is missing
+    tempVsFeelsChart.update();
+  }
+
+  if (humidityRainChart) {
+    humidityRainChart.data.labels = labels;
+    humidityRainChart.data.datasets[0].data = hums;
+    humidityRainChart.data.datasets[1].data = rains;
+    humidityRainChart.update();
+  }
+
+  if (windTrendChart) {
+    windTrendChart.data.labels = labels;
+    windTrendChart.data.datasets[0].data = winds;
+    windTrendChart.update();
+  }
+
+  // Update Mini Metrics & Tip
+  const avgWind = winds.reduce((a, b) => a + b, 0) / 24;
+  document.getElementById('avg-wind-day').textContent = `${avgWind.toFixed(1)} km/h avg`;
+  
+  const tipText = document.getElementById('insight-tip-text');
+  if (isToday) {
+    tipText.textContent = "Currently viewing live conditions. Check future days for specific travel tips.";
+  } else {
+    if (rains.some(r => r > 50)) tipText.textContent = "Rain intensity peaks in the afternoon. Schedule indoor meetings between 2 PM and 5 PM.";
+    else if (avgWind > 20) tipText.textContent = "High winds detected. Secure loose items on balconies and expect slight commute delays.";
+    else if (temps.some(t => t > 38)) tipText.textContent = "Peak heat expected. Best to complete outdoor site visits before 10 AM.";
+    else tipText.textContent = "Stable environment predicted. Ideal day for regular urban maintenance and outdoor activity.";
+  }
+
+  // Update Character Animation
+  updateWeatherCharacter(targetData.condition);
+
+  // Render Forecast Sidebar (only once or update active class)
+  if (isToday) renderForecast(data.forecast);
+  else updateForecastActiveState(dayIndex);
+}
+
+function selectWeatherDay(index) {
+  selectedDayIndex = index;
+  if (lastWeatherData) {
+    updateWeatherDashboard(lastWeatherData, index);
+  }
+}
+
+function resetToToday() {
+  selectedDayIndex = -1;
+  if (lastWeatherData) {
+    updateWeatherDashboard(lastWeatherData, -1);
+  }
+}
+
+function updateForecastActiveState(index) {
+  const items = document.querySelectorAll('.forecast-item');
+  items.forEach((item, i) => {
+    if (i === index) item.classList.add('active');
+    else item.classList.remove('active');
+  });
+}
+
+function updateWeatherCharacter(condition) {
+  const container = document.getElementById('char-layer');
+  const emoji = document.getElementById('main-emoji');
+  
+  // Clean previous classes
+  emoji.className = 'main-weather-emoji';
+  
+  let icon = "☀️";
+  let animClass = "cap-anim";
+
+  if (condition.includes("Rain") || condition.includes("Drizzle")) {
+    icon = "☔";
+    animClass = "umbrella-anim";
+  } else if (condition.includes("Cloud") || condition.includes("Overcast")) {
+    icon = "☁️";
+    animClass = "bounce";
+  } else if (condition.includes("Snow") || condition.includes("Heavy Rain")) {
+    icon = "🧥";
+    animClass = "jacket-anim";
+  } else if (condition.includes("Fog") || condition.includes("Hazy")) {
+    icon = "🌫️";
+    animClass = "float";
+  }
+
+  emoji.textContent = icon;
+  emoji.classList.add(animClass);
+}
+
+function renderForecast(forecast) {
+  const container = document.getElementById('forecast-container');
+  container.innerHTML = '';
+
+  forecast.forEach((day, index) => {
+    const date = new Date(day.date);
+    const dayName = index === 0 ? "Today" : date.toLocaleDateString('en-US', { weekday: 'short' });
+    
+    const div = document.createElement('div');
+    div.className = `forecast-item ${index === selectedDayIndex || (index === 0 && selectedDayIndex === -1) ? 'active' : ''}`;
+    div.onclick = () => selectWeatherDay(index);
+    div.innerHTML = `
+      <div class="f-date">${dayName}</div>
+      <div class="f-condition">
+        <span>${getConditionEmoji(day.condition)}</span>
+        ${day.condition}
+      </div>
+      <div class="f-temp">${Math.round(day.max_temp)}° <span>${Math.round(day.min_temp)}°</span></div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function getConditionEmoji(condition) {
+  if (condition.includes("Rain")) return "🌧️";
+  if (condition.includes("Sunny") || condition.includes("Clear")) return "☀️";
+  if (condition.includes("Cloud")) return "⛅";
+  if (condition.includes("Thunder")) return "⛈️";
+  return "☁️";
+}
+
+function switchWeatherTab(type) {
+  const tabTemp = document.getElementById('tab-temp');
+  const tabRain = document.getElementById('tab-rain');
+  const chartTemp = document.getElementById('hourlyTempChart');
+  const chartRain = document.getElementById('rainProbChart');
+
+  if (type === 'temp') {
+    tabTemp.classList.add('active');
+    tabRain.classList.remove('active');
+    chartTemp.classList.remove('hidden');
+    chartRain.classList.add('hidden');
+  } else {
+    tabRain.classList.add('active');
+    tabTemp.classList.remove('active');
+    chartRain.classList.remove('hidden');
+    chartTemp.classList.add('hidden');
+  }
+}
+
 function updateWeatherPrediction(data) {
-  if (!data.current_weather) return;
+  if (!data || !data.current_weather) return;
   const currentTemp = data.current_weather.temperature;
-  const isDay = data.current_weather.is_day;
   const weatherCode = data.current_weather.weathercode;
   
-  let desc = "Clear";
-  let emoji = isDay ? "☀️" : "🌙";
   let prediction = "Stable";
+  if (weatherCode >= 51 && weatherCode <= 67) { prediction = "Rain Expected"; }
+  else if (weatherCode >= 71 && weatherCode <= 77) { prediction = "Cold Drop"; }
+  else if (weatherCode >= 95) { prediction = "Storms"; }
+
+  // Defensive updates for legacy elements if they still exist elsewhere
+  const rainVal = document.getElementById("rain-val");
+  if (rainVal) rainVal.innerText = (weatherCode >= 51) ? "High" : "Low";
   
-  if (weatherCode >= 1 && weatherCode <= 3) { desc = "Partly Cloudy"; emoji = "⛅"; }
-  else if (weatherCode >= 45 && weatherCode <= 48) { desc = "Foggy"; emoji = "🌫️"; }
-  else if (weatherCode >= 51 && weatherCode <= 67) { desc = "Rainy"; emoji = "🌧️"; prediction = "Rain Expected"; document.getElementById("rain-val").innerText = "High"; }
-  else if (weatherCode >= 71 && weatherCode <= 77) { desc = "Snowy"; emoji = "❄️"; prediction = "Cold Drop"; }
-  else if (weatherCode >= 95) { desc = "Thunderstorm"; emoji = "⛈️"; prediction = "Storms"; document.getElementById("rain-val").innerText = "High"; }
+  const tempChangeVal = document.getElementById("temp-change-val");
+  if (tempChangeVal) {
+    if(currentTemp > 30) tempChangeVal.innerText = "Rising (Hot)";
+    else if(currentTemp < 10) tempChangeVal.innerText = "Dropping (Cold)";
+    else tempChangeVal.innerText = "Moderate";
+  }
 
-  if(currentTemp > 30) { emoji = "🥵"; document.getElementById("temp-change-val").innerText = "Rising (Hot)"; }
-  else if(currentTemp < 10) { emoji = "🥶"; document.getElementById("temp-change-val").innerText = "Dropping (Cold)"; }
-  else { document.getElementById("temp-change-val").innerText = "Moderate"; }
-
-  document.getElementById("weather-desc").innerText = desc;
-  document.querySelector(".char-emoji").innerText = emoji;
-  document.getElementById("trend-val").innerText = prediction;
+  const trendVal = document.getElementById("trend-val");
+  if (trendVal) trendVal.innerText = prediction;
 }
 
 function updatePollutionChart(data, isSimulated) {

@@ -129,30 +129,159 @@
       <section id="weather-section" class="content-section">
         <div class="section-heading">
           <h2>Weather Intelligence</h2>
-          <p>Detailed forecasts and historical trends</p>
+          <p>Real-time conditions and 7-day city forecast</p>
         </div>
-        <div class="weather-grid">
-          <div class="weather-main premium-card">
-            <div class="weather-current">
-              <div class="weather-temp-large"><span id="weather-temp-large" data-animate-value>0</span>°C</div>
-              <div class="weather-desc" id="weather-desc">Loading...</div>
+        
+        <div class="weather-dashboard">
+          <!-- Main Current Weather Card -->
+          <div class="weather-main-card premium-card" id="weather-card-loading">
+             <div class="weather-loading-spinner"></div>
+             <p>Fetching live weather data...</p>
+          </div>
+
+          <div class="weather-main-card premium-card hidden" id="weather-card-error">
+             <div class="error-icon">⚠️</div>
+             <p>Unable to fetch weather data. Please try again.</p>
+             <button class="action-btn" onclick="loadDashboardData()">Retry</button>
+          </div>
+
+          <div class="weather-layout hidden" id="weather-main-content">
+            <!-- Left: Current Weather Details -->
+            <div class="weather-current-details">
+              <div class="weather-hero premium-card">
+                <div class="weather-hero-header">
+                  <span class="report-badge" id="weather-report-mode">Current Weather</span>
+                  <button class="reset-btn hidden" id="weather-reset-btn" onclick="resetToToday()">Today</button>
+                </div>
+                <div class="hero-info">
+                  <h3 id="weather-city">Delhi</h3>
+                  <div class="hero-temp"><span id="main-temp">0</span>°C</div>
+                  <div class="hero-condition" id="main-condition">Sunny</div>
+                  <div class="hero-meta">Feels like <span id="feels-like">0</span>°C &bull; <span id="weather-source">Source</span></div>
+                </div>
+                <div class="weather-character-box" id="weather-character-container">
+                  <div class="char-animation-layer" id="char-layer">
+                     <span class="main-weather-emoji" id="main-emoji">☀️</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="weather-metrics-grid">
+                <div class="metric-mini-card premium-card">
+                  <span class="m-icon">💧</span>
+                  <div class="m-info">
+                    <label>Humidity</label>
+                    <span id="m-humidity">0%</span>
+                  </div>
+                </div>
+                <div class="metric-mini-card premium-card">
+                  <span class="m-icon">💨</span>
+                  <div class="m-info">
+                    <label>Wind Speed</label>
+                    <span id="m-wind">0 km/h</span>
+                  </div>
+                </div>
+                <div class="metric-mini-card premium-card">
+                  <span class="m-icon">⏲️</span>
+                  <div class="m-info">
+                    <label>Pressure</label>
+                    <span id="m-pressure">0 hPa</span>
+                  </div>
+                </div>
+                <div class="metric-mini-card premium-card">
+                  <span class="m-icon">☔</span>
+                  <div class="m-info">
+                    <label>Rain Prob.</label>
+                    <span id="m-rain">0%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Day Details Report -->
+              <div class="day-report-details premium-card hidden" id="day-report-details">
+                <div class="report-row">
+                  <div class="report-item"><span>🌅</span> <label>Sunrise</label> <strong id="r-sunrise">--</strong></div>
+                  <div class="report-item"><span>🌇</span> <label>Sunset</label> <strong id="r-sunset">--</strong></div>
+                </div>
+                <div class="report-row">
+                  <div class="report-item"><span>🌡️</span> <label>Max/Min</label> <strong id="r-temp-range">--</strong></div>
+                  <div class="report-item"><span>☀️</span> <label>UV Index</label> <strong id="r-uv">--</strong></div>
+                </div>
+                <div class="recommendation-box" id="weather-recommendation">
+                  Fetching smart recommendation...
+                </div>
+              </div>
             </div>
-            <div class="weather-character" id="weather-character">
-              <div class="char-circle"></div>
-              <span class="char-emoji">🌤️</span>
+
+            <!-- Middle: Hourly & Rain Charts -->
+            <div class="weather-trends premium-card">
+              <div class="trend-header">
+                <h3>Hourly Forecast</h3>
+                <div class="trend-tabs">
+                  <button class="tab-btn active" id="tab-temp" onclick="switchWeatherTab('temp')">Temp</button>
+                  <button class="tab-btn" id="tab-rain" onclick="switchWeatherTab('rain')">Rain %</button>
+                </div>
+              </div>
+              <div class="chart-container-weather">
+                <canvas id="hourlyTempChart"></canvas>
+                <canvas id="rainProbChart" class="hidden"></canvas>
+              </div>
+            </div>
+
+            <!-- Right: 7-Day Forecast -->
+            <div class="weather-forecast-sidebar premium-card">
+              <h3>7-Day Forecast</h3>
+              <div class="forecast-list" id="forecast-container">
+                <!-- Forecast items will be injected here -->
+              </div>
             </div>
           </div>
-          <div class="weather-forecast premium-card">
-            <h3>Prediction Insights</h3>
-            <ul class="insight-list">
-              <li>Expected Trend: <strong id="trend-val">Stable</strong></li>
-              <li>Rain Possibility: <strong id="rain-val">Low</strong></li>
-              <li>Temp Change: <strong id="temp-change-val">Minimal</strong></li>
-            </ul>
-          </div>
-          <div class="weather-chart premium-card full-span">
-            <h3>Temperature & Humidity Trends (24h)</h3>
-            <div class="chart-container"><canvas id="weatherChart"></canvas></div>
+
+          <!-- New: Weather Insights Panel -->
+          <div class="weather-insights-panel premium-card hidden" id="weather-insights-panel">
+            <div class="insights-header">
+              <h3>Weather Insights & Deep Dive</h3>
+              <p>Granular environmental analysis for the selected day</p>
+            </div>
+            <div class="insights-grid">
+              <!-- Left: Temp vs Feels Like -->
+              <div class="insight-chart-box">
+                <div class="chart-header">
+                  <h4>Temperature vs Feels Like</h4>
+                </div>
+                <div class="insight-chart-wrapper">
+                  <canvas id="tempVsFeelsChart"></canvas>
+                </div>
+              </div>
+              <!-- Right: Environment Mix -->
+              <div class="insight-chart-box">
+                <div class="chart-header">
+                  <h4>Humidity & Rain Mix</h4>
+                </div>
+                <div class="insight-chart-wrapper">
+                  <canvas id="humidityRainChart"></canvas>
+                </div>
+              </div>
+              <!-- Bottom Row: Wind & Smart Rec -->
+              <div class="insight-footer">
+                <div class="insight-mini-chart">
+                  <div class="mini-chart-header">
+                    <span>💨 Wind Trend</span>
+                    <strong id="avg-wind-day">10 km/h avg</strong>
+                  </div>
+                  <div class="mini-chart-wrapper">
+                    <canvas id="windTrendChart"></canvas>
+                  </div>
+                </div>
+                <div class="insight-rec-card" id="insights-recommendation-card">
+                  <div class="rec-icon">💡</div>
+                  <div class="rec-content">
+                    <label>Proactive Tip</label>
+                    <p id="insight-tip-text">Select a day to see deep-dive insights.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -166,7 +295,7 @@
         <div class="pollution-grid">
           <div class="pollution-chart premium-card">
             <h3>AQI Trend (Last 24h)</h3>
-            <div class="chart-container"><canvas id="pollutionChart"></canvas></div>
+            <div class="chart-wrapper"><canvas id="pollutionChart"></canvas></div>
           </div>
           <div class="pollution-details premium-card">
             <h3>Safety Recommendations</h3>
@@ -217,7 +346,7 @@
         <div class="traffic-grid">
           <div class="traffic-chart premium-card">
             <h3>Congestion Index by Hour</h3>
-            <div class="chart-container"><canvas id="trafficChart"></canvas></div>
+            <div class="chart-wrapper"><canvas id="trafficChart"></canvas></div>
           </div>
           <div class="traffic-sidebar premium-card">
             <h3>Busy Areas Right Now</h3>
@@ -280,7 +409,7 @@
         <!-- Combined Chart -->
         <div class="combined-chart premium-card">
           <h3>Combined Forecast (Next 6 Hours)</h3>
-          <div class="chart-container"><canvas id="insightsChart"></canvas></div>
+          <div class="chart-wrapper"><canvas id="insightsChart"></canvas></div>
           <p class="simulated-label" style="text-align: right; margin-top: 0.5rem;">AQI & Traffic are simulated if API is unavailable</p>
         </div>
       </section>
