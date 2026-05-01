@@ -363,16 +363,16 @@ async function loadDashboardData() {
       console.warn("Backend unavailable, using Open-Meteo fallback.");
       // Use Open-Meteo current weather if backend fails
       if (weatherTrends.status === "fulfilled") {
-        state.temp = weatherTrends.value.current_weather.temperature;
-        state.humidity = weatherTrends.value.hourly.relative_humidity_2m[0];
-        
+        updateWeatherChart(weatherTrends.value);
+        state.temp = weatherTrends.value.current_weather ? weatherTrends.value.current_weather.temperature : (weatherTrends.value.hourly.temperature_2m ? weatherTrends.value.hourly.temperature_2m[0] : 0);
+        state.humidity = weatherTrends.value.hourly.relative_humidity_2m ? weatherTrends.value.hourly.relative_humidity_2m[0] : 0;
         updateElementWithAnimation("temperature", state.temp);
         updateElementWithAnimation("weather-temp-large", state.temp);
         updateElementWithAnimation("humidity", state.humidity);
       } else {
         showFallbackData();
       }
-      
+
       // Use Open-Meteo AQI if backend fails
       if (aqiTrends.status === "fulfilled") {
         state.aqi = aqiTrends.value.hourly.us_aqi[0];
@@ -436,9 +436,12 @@ async function fetchAQITrends() {
 function updateWeatherChart(data) {
   if (!weatherChart || !data.hourly) return;
   const labels = data.hourly.time.map(t => new Date(t).getHours() + ":00");
+  // Use correct temperature field
+  const tempData = data.hourly.temperature ? data.hourly.temperature : data.hourly.temperature_2m;
+  const humidityData = data.hourly.relative_humidity_2m ? data.hourly.relative_humidity_2m : [];
   weatherChart.data.labels = labels;
-  weatherChart.data.datasets[0].data = data.hourly.temperature_2m;
-  weatherChart.data.datasets[1].data = data.hourly.relative_humidity_2m;
+  weatherChart.data.datasets[0].data = tempData;
+  weatherChart.data.datasets[1].data = humidityData;
   weatherChart.update();
 }
 
@@ -497,8 +500,13 @@ function updateWeatherDashboard(data, dayIndex = -1) {
   const endIndex = startIndex + 24;
   
   const labels = data.hourly.time.slice(startIndex, endIndex).map(t => t.split('T')[1].substring(0, 5));
-  const temps = data.hourly.temperature.slice(startIndex, endIndex);
-  const rains = data.hourly.rain_probability.slice(startIndex, endIndex);
+  // Support both backend keys (temperature / rain_probability) and Open-Meteo keys (temperature_2m / precipitation_probability)
+  const tempArr = data.hourly.temperature || data.hourly.temperature_2m || [];
+  const rainArr = data.hourly.rain_probability || data.hourly.precipitation_probability || [];
+  const humArr  = data.hourly.humidity || data.hourly.relative_humidity_2m || [];
+  const windArr = data.hourly.wind_speed || data.hourly.wind_speed_10m || [];
+  const temps = tempArr.slice(startIndex, endIndex);
+  const rains = rainArr.slice(startIndex, endIndex);
   
   if (hourlyTempChart) {
     hourlyTempChart.data.labels = labels;
@@ -516,8 +524,8 @@ function updateWeatherDashboard(data, dayIndex = -1) {
   document.getElementById('weather-insights-panel').classList.remove('hidden');
 
   // Update Insights Charts
-  const hums = data.hourly.humidity.slice(startIndex, endIndex);
-  const winds = data.hourly.wind_speed.slice(startIndex, endIndex);
+  const hums = humArr.slice(startIndex, endIndex);
+  const winds = windArr.slice(startIndex, endIndex);
   
   if (tempVsFeelsChart) {
     tempVsFeelsChart.data.labels = labels;
