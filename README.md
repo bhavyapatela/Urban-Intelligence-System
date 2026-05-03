@@ -15,12 +15,13 @@ This system combines **data analysis, machine learning, and an AI-powered chatbo
 - xgboost
 - Scikit-learn
 - FastAPI
-- Generative AI
-- Openmeteo
-- Uvicorn
 - Data Analysis
 - Machine Learning
 - HTML, CSS, JavaScript
+- Generative AI
+- Openmeteo
+- Uvicorn
+- Leaflet / OpenStreetMap
 
 ---
 
@@ -100,7 +101,7 @@ User Query → AI Agent → Data/Model → Insight → Response
 - Multi-source data integration  
 - Data cleaning & transformation pipeline  
 - Predictive analytics using ML  
-- Interactive dashboards  
+- Interactive dashboard
 - AI-powered chatbot interface  
 
 ---
@@ -109,7 +110,8 @@ User Query → AI Agent → Data/Model → Insight → Response
 - Real-time data streaming  
 - Advanced ML models (Deep Learning)  
 - Cloud deployment  
-- Mobile/web app integration  
+- Mobile/web app integration
+- Expand Geography  
 
 ---
 
