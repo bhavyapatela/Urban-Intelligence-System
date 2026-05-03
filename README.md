@@ -10,6 +10,20 @@ This system combines **data analysis, machine learning, and an AI-powered chatbo
 
 ---
 
+## 🛠️ Tech Stack
+- Python
+- xgboost
+- Scikit-learn
+- FastAPI
+- Generative AI
+- Openmeteo
+- Uvicorn
+- Data Analysis
+- Machine Learning
+- HTML, CSS, JavaScript
+
+---
+
 ## 🎯 Objectives
 - Collect data from APIs and datasets  
 - Clean and transform raw data into structured datasets  
